@@ -9,3 +9,4 @@
 - [x] Conexión y push final a GitHub `comficacompras-cell/Neural-Fit-Core` completados.
 - [x] Inicio de Phase 2: motor nutricional local creado en `nutrition-engine.ts` con alimentos de Venezuela, macros y sustituciones económicas por biotipo.
 - [x] Integración de Phase 2 al flujo principal: guardado automático biomecánico + nutricional en `storage.js` y componente UI de "Sustitución Recomendada del Día".
+- [x] Interrogatorio de despensa activo: filtro interactivo de disponibilidad/presupuesto con alternativas de emergencia en nutrición.

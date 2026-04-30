@@ -27,6 +27,13 @@ export interface NutritionPlanSuggestion {
   notes: string[];
 }
 
+export interface PantryQuestionResult {
+  question: string;
+  hasFoodAvailable: boolean;
+  recommendation: string;
+  emergencyAlternative?: string;
+}
+
 export const LOCAL_FOODS_VENEZUELA: LocalFood[] = [
   // Proteinas
   { name: "Sardina fresca", category: "protein", serving: "100 g", protein: 24, carbs: 0, fat: 11, budgetTier: "low" },
@@ -47,6 +54,12 @@ export const LOCAL_FOODS_VENEZUELA: LocalFood[] = [
   { name: "Aguacate", category: "fat", serving: "100 g", protein: 2, carbs: 9, fat: 15, budgetTier: "mid" },
   { name: "Aceite vegetal", category: "fat", serving: "1 cucharada", protein: 0, carbs: 0, fat: 14, budgetTier: "low" },
 ];
+
+const EMERGENCY_ALTERNATIVES: Record<string, string> = {
+  "Suero de leche": "Queso blanco duro rallado (proteina lenta)",
+  Yuca: "Ocumo o Cambur Verde (carbohidratos complejos locales)",
+  "Harina de maiz": "Avena en hojuelas o Fororo",
+};
 
 function isEctoMesomorph(profile: BioAnalysisResult): boolean {
   return profile.biotipo === "ectomorph" || profile.biotipo === "mesomorph";
@@ -117,5 +130,41 @@ export function buildNutritionSuggestion(profile: BioAnalysisResult): NutritionP
     prioritizedFoods,
     economicalSwaps,
     notes,
+  };
+}
+
+export function getEmergencyAlternative(foodName: string): string | null {
+  return EMERGENCY_ALTERNATIVES[foodName] ?? null;
+}
+
+export function runPantryInterrogation(
+  recommendedFood: string,
+  hasFoodAvailable: boolean
+): PantryQuestionResult {
+  const question = `¿Tienes ${recommendedFood} disponible hoy o entra en tu presupuesto?`;
+
+  if (hasFoodAvailable) {
+    return {
+      question,
+      hasFoodAvailable: true,
+      recommendation: `Perfecto. Mantén ${recommendedFood} en tu plan de hoy.`,
+    };
+  }
+
+  const emergencyAlternative = getEmergencyAlternative(recommendedFood);
+  if (emergencyAlternative) {
+    return {
+      question,
+      hasFoodAvailable: false,
+      recommendation: `No hay problema. Usa esta alternativa inmediata: ${emergencyAlternative}.`,
+      emergencyAlternative,
+    };
+  }
+
+  return {
+    question,
+    hasFoodAvailable: false,
+    recommendation:
+      "No hay una alternativa específica cargada para hoy. Usa Fororo o Huevo como respaldo económico general.",
   };
 }
