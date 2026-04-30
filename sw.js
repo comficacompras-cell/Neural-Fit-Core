@@ -7,6 +7,8 @@ const APP_SHELL = [
   "./ai-engine.ts",
   "./nutrition-engine.ts",
   "./analysis-flow.ts",
+  "./rep-counter.js",
+  "./rep-counter.ts",
   "./manifest.json",
   "./icons/icon-192.svg",
   "./icons/icon-512.svg"

@@ -3,6 +3,7 @@ const STORAGE_FULL_ANALYSIS_KEY = "neural_fit_full_analysis_v1";
 const STORAGE_VISUAL_REFS_KEY = "neural_fit_visual_refs_v1";
 const STORAGE_VISUAL_DIARY_KEY = "neural_fit_visual_diary_v1";
 const STORAGE_PERIMETER_HISTORY_KEY = "neural_fit_perimeter_history_v1";
+const STORAGE_USER_PROFILE_KEY = "neural_fit_user_profile_v1";
 
 export function saveBioAnalysisResult(result) {
   if (!result || typeof result !== "object") {
@@ -130,5 +131,28 @@ export function getPerimeterHistory() {
   } catch (error) {
     console.warn("No se pudo parsear historial de perimetros.", error);
     return [];
+  }
+}
+
+export function saveUserProfile(profile) {
+  if (!profile || typeof profile !== "object") {
+    throw new Error("Perfil de usuario invalido.");
+  }
+  const payload = {
+    ...profile,
+    savedAt: new Date().toISOString(),
+  };
+  localStorage.setItem(STORAGE_USER_PROFILE_KEY, JSON.stringify(payload));
+  return payload;
+}
+
+export function getUserProfile() {
+  const raw = localStorage.getItem(STORAGE_USER_PROFILE_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    console.warn("No se pudo parsear el perfil de usuario.", error);
+    return null;
   }
 }
