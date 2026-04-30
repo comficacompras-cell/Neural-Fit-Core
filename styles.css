@@ -110,3 +110,36 @@ body {
 .visual-btn {
   margin-top: 14px;
 }
+
+.measure-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.measure-grid input {
+  background: #0b1220;
+  border: 1px solid #334155;
+  color: #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.history-table th,
+.history-table td {
+  border: 1px solid #334155;
+  padding: 8px;
+  text-align: left;
+}
+
+.history-table th {
+  background: #0b1220;
+}

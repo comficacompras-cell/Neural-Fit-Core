@@ -29,6 +29,22 @@ export interface VisualComparisonResult {
   focusAreas: string[];
 }
 
+export interface PrecisionPerimeterRecord {
+  brazoIzqCm: number;
+  brazoDerCm: number;
+  musloCm: number;
+  pantorrillaCm: number;
+  cinturaCm: number;
+  timestamp?: string;
+}
+
+export interface BiometricsRatioResult {
+  ratioActual: number;
+  ratioPrevio?: number;
+  successMesomorph: boolean;
+  summary: string;
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
@@ -129,5 +145,42 @@ export function compareVisualProportions(
     improvementPercent,
     summary,
     focusAreas,
+  };
+}
+
+/**
+ * Phase 3.5 (Precision Perimeters):
+ * Compara la relacion Cintura/Pierna (muslo + pantorrilla) entre dos registros.
+ * Regla de exito mesomorfo: pierna sube y cintura se mantiene o baja.
+ */
+export function compareWaistLegRatio(
+  previous: PrecisionPerimeterRecord | null,
+  current: PrecisionPerimeterRecord,
+  biotipo: Biotipo
+): BiometricsRatioResult {
+  const currentLeg = Math.max(current.musloCm + current.pantorrillaCm, 1);
+  const ratioActual = round2(current.cinturaCm / currentLeg);
+
+  if (!previous) {
+    return {
+      ratioActual,
+      successMesomorph: false,
+      summary: "Primer registro guardado. Aun no hay comparacion historica.",
+    };
+  }
+
+  const previousLeg = Math.max(previous.musloCm + previous.pantorrillaCm, 1);
+  const ratioPrevio = round2(previous.cinturaCm / previousLeg);
+  const piernaCrecio = currentLeg > previousLeg;
+  const cinturaEstableOBaja = current.cinturaCm <= previous.cinturaCm;
+  const successMesomorph = biotipo === "mesomorph" && piernaCrecio && cinturaEstableOBaja;
+
+  return {
+    ratioActual,
+    ratioPrevio,
+    successMesomorph,
+    summary: successMesomorph
+      ? "Exito mesomorfo confirmado: pierna en crecimiento con cintura estable o en descenso."
+      : "Relacion Cintura/Pierna actualizada. Sigue monitoreando tendencia semanal.",
   };
 }

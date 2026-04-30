@@ -49,6 +49,60 @@
           Carga tus 3 fotos para generar el primer registro visual.
         </div>
       </section>
+
+      <section class="card">
+        <h2>Modulo de Perimetros de Precision</h2>
+        <p class="muted">
+          Registra medidas corporales para analizar la relacion biometrica Cintura/Pierna y su evolucion.
+        </p>
+        <form id="perimeter-form" class="measure-grid">
+          <label class="upload-item">
+            <span>Brazo Izquierdo (cm)</span>
+            <input id="measure-arm-left" type="number" min="1" step="0.1" required />
+          </label>
+          <label class="upload-item">
+            <span>Brazo Derecho (cm)</span>
+            <input id="measure-arm-right" type="number" min="1" step="0.1" required />
+          </label>
+          <label class="upload-item">
+            <span>Muslo (punto medio del femur, cm)</span>
+            <input id="measure-thigh" type="number" min="1" step="0.1" required />
+          </label>
+          <label class="upload-item">
+            <span>Pantorrilla (cm)</span>
+            <input id="measure-calf" type="number" min="1" step="0.1" required />
+          </label>
+          <label class="upload-item">
+            <span>Cintura (ombligo, cm)</span>
+            <input id="measure-waist" type="number" min="1" step="0.1" required />
+          </label>
+        </form>
+        <div class="action-row">
+          <button id="btn-save-measures" class="action-btn visual-btn">Guardar Medidas</button>
+        </div>
+        <div id="measure-feedback" class="swap-box secondary">
+          Aun no hay datos de perimetros cargados.
+        </div>
+
+        <h3>Historico de Medidas</h3>
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Brazo Izq</th>
+              <th>Brazo Der</th>
+              <th>Muslo</th>
+              <th>Pantorrilla</th>
+              <th>Cintura</th>
+            </tr>
+          </thead>
+          <tbody id="measure-history-body">
+            <tr>
+              <td colspan="6" class="muted">Sin registros todavia.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
     </main>
 
     <script type="module">
@@ -57,6 +111,8 @@
         savePhotoReferences,
         saveVisualDiaryEntry,
         getVisualDiaryEntries,
+        savePerimeterRecord,
+        getPerimeterHistory,
       } from "./storage.js";
 
       const swapContainer = document.getElementById("daily-swap");
@@ -76,6 +132,9 @@
       const previewBack = document.getElementById("preview-back");
       const visualBtn = document.getElementById("btn-analyze-visual");
       const visualFeedback = document.getElementById("visual-feedback");
+      const btnSaveMeasures = document.getElementById("btn-save-measures");
+      const measureFeedback = document.getElementById("measure-feedback");
+      const measureHistoryBody = document.getElementById("measure-history-body");
 
       const emergencyAlternatives = {
         "Suero de leche": "Queso blanco duro rallado (proteina lenta)",
@@ -114,6 +173,62 @@
         const hipDelta = ((current.caderaPostureScore - previous.caderaPostureScore) / prevHip) * 100;
         const weighted = hasLongFemur ? quadDelta * 0.65 + hipDelta * 0.35 : quadDelta * 0.5 + hipDelta * 0.5;
         return Math.round(weighted * 100) / 100;
+      }
+
+      function round2(value) {
+        return Math.round(value * 100) / 100;
+      }
+
+      function compareWaistLegRatio(previous, current, biotipo) {
+        const currentLeg = Math.max(current.musloCm + current.pantorrillaCm, 1);
+        const ratioActual = round2(current.cinturaCm / currentLeg);
+
+        if (!previous) {
+          return {
+            ratioActual,
+            successMesomorph: false,
+            summary: "Primer registro guardado. Aun no hay comparacion historica.",
+          };
+        }
+
+        const previousLeg = Math.max(previous.musloCm + previous.pantorrillaCm, 1);
+        const ratioPrevio = round2(previous.cinturaCm / previousLeg);
+        const piernaCrecio = currentLeg > previousLeg;
+        const cinturaEstableOBaja = current.cinturaCm <= previous.cinturaCm;
+        const successMesomorph = biotipo === "mesomorph" && piernaCrecio && cinturaEstableOBaja;
+
+        return {
+          ratioActual,
+          ratioPrevio,
+          successMesomorph,
+          summary: successMesomorph
+            ? "Exito mesomorfo confirmado: pierna crece y cintura se mantiene o baja."
+            : "Relacion Cintura/Pierna actualizada. Continua el seguimiento.",
+        };
+      }
+
+      function renderMeasureHistory() {
+        const history = getPerimeterHistory();
+        if (!history.length) {
+          measureHistoryBody.innerHTML = '<tr><td colspan="6" class="muted">Sin registros todavia.</td></tr>';
+          return;
+        }
+
+        measureHistoryBody.innerHTML = history
+          .map((item) => {
+            const date = new Date(item.savedAt).toLocaleDateString("es-VE");
+            return `
+              <tr>
+                <td>${date}</td>
+                <td>${item.brazoIzqCm}</td>
+                <td>${item.brazoDerCm}</td>
+                <td>${item.musloCm}</td>
+                <td>${item.pantorrillaCm}</td>
+                <td>${item.cinturaCm}</td>
+              </tr>
+            `;
+          })
+          .join("");
       }
 
       if (swap) {
@@ -187,6 +302,37 @@
         visualFeedback.textContent =
           `Tu biotipo ${biotypeLabel} ha mostrado un ${improvementPercent}% de mejora en densidad muscular.`;
       });
+
+      btnSaveMeasures.addEventListener("click", () => {
+        const brazoIzqCm = Number(document.getElementById("measure-arm-left").value);
+        const brazoDerCm = Number(document.getElementById("measure-arm-right").value);
+        const musloCm = Number(document.getElementById("measure-thigh").value);
+        const pantorrillaCm = Number(document.getElementById("measure-calf").value);
+        const cinturaCm = Number(document.getElementById("measure-waist").value);
+
+        if (!brazoIzqCm || !brazoDerCm || !musloCm || !pantorrillaCm || !cinturaCm) {
+          measureFeedback.textContent = "Completa todos los campos de medidas para guardar.";
+          return;
+        }
+
+        const history = getPerimeterHistory();
+        const previous = history.length ? history[history.length - 1] : null;
+        const current = {
+          brazoIzqCm,
+          brazoDerCm,
+          musloCm,
+          pantorrillaCm,
+          cinturaCm,
+        };
+        savePerimeterRecord(current);
+        const biotipo = bioProfile?.biotipo || "mesomorph";
+        const ratioResult = compareWaistLegRatio(previous, current, biotipo);
+
+        measureFeedback.textContent = `${ratioResult.summary} Ratio actual: ${ratioResult.ratioActual}`;
+        renderMeasureHistory();
+      });
+
+      renderMeasureHistory();
     </script>
   </body>
 </html>

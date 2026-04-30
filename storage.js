@@ -2,6 +2,7 @@ const STORAGE_KEY = "neural_fit_bio_analysis_v1";
 const STORAGE_FULL_ANALYSIS_KEY = "neural_fit_full_analysis_v1";
 const STORAGE_VISUAL_REFS_KEY = "neural_fit_visual_refs_v1";
 const STORAGE_VISUAL_DIARY_KEY = "neural_fit_visual_diary_v1";
+const STORAGE_PERIMETER_HISTORY_KEY = "neural_fit_perimeter_history_v1";
 
 export function saveBioAnalysisResult(result) {
   if (!result || typeof result !== "object") {
@@ -104,6 +105,30 @@ export function getVisualDiaryEntries() {
     return JSON.parse(raw);
   } catch (error) {
     console.warn("No se pudo parsear historial visual.", error);
+    return [];
+  }
+}
+
+export function savePerimeterRecord(record) {
+  if (!record || typeof record !== "object") {
+    throw new Error("Registro de perimetros invalido.");
+  }
+
+  const raw = localStorage.getItem(STORAGE_PERIMETER_HISTORY_KEY);
+  const list = raw ? JSON.parse(raw) : [];
+  const nextRecord = { ...record, savedAt: new Date().toISOString() };
+  const next = [...list, nextRecord];
+  localStorage.setItem(STORAGE_PERIMETER_HISTORY_KEY, JSON.stringify(next));
+  return nextRecord;
+}
+
+export function getPerimeterHistory() {
+  const raw = localStorage.getItem(STORAGE_PERIMETER_HISTORY_KEY);
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    console.warn("No se pudo parsear historial de perimetros.", error);
     return [];
   }
 }

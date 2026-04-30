@@ -11,3 +11,4 @@
 - [x] Integración de Phase 2 al flujo principal: guardado automático biomecánico + nutricional en `storage.js` y componente UI de "Sustitución Recomendada del Día".
 - [x] Interrogatorio de despensa activo: filtro interactivo de disponibilidad/presupuesto con alternativas de emergencia en nutrición.
 - [x] Inicio de Phase 3: Visual Evolution Diary con carga de fotos (frente/perfil/espalda), registro local y feedback de mejora muscular.
+- [x] Módulo de Perímetros de Precisión: formulario de medidas, análisis Cintura/Pierna y tabla de histórico por fecha.
