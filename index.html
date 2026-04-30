@@ -1,35 +1,35 @@
-// Este código fuerza la activación del sonido al tocar la pantalla
-let audioCtx = null;
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Neural Fit Core</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <section class="card">
+        <h1>Neural Fit Core</h1>
+        <p class="muted">
+          Componente UI: Sustitucion Recomendada del Dia basada en tu analisis biomecanico.
+        </p>
+        <div id="daily-swap" class="swap-box">Cargando recomendacion...</div>
+      </section>
+    </main>
 
-function initAudio() {
-    if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-}
+    <script type="module">
+      import { getFullAnalysisResult } from "./storage.js";
 
-function playBeep(frequency, duration) {
-    initAudio();
-    if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-    }
-    const oscillator = audioCtx.createOscillator();
-    const gainNode = audioCtx.createGain();
+      const swapContainer = document.getElementById("daily-swap");
+      const saved = getFullAnalysisResult();
+      const swap = saved?.nutrition?.economicalSwaps?.[0];
 
-    oscillator.type = 'square'; // Sonido tipo alerta de juego antiguo, imposible de ignorar
-    oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
-    
-    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-
-    oscillator.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-
-    oscillator.start();
-    oscillator.stop(audioCtx.currentTime + duration);
-}
-
-// Vincula esto al icono de la corneta
-document.getElementById('sound-toggle').addEventListener('click', () => {
-    playBeep(880, 0.1); // Un pitido de prueba al tocar
-    console.log("Audio desbloqueado");
-});
+      if (swap) {
+        swapContainer.textContent = `Hoy cambia ${swap.replace} por ${swap.with} para optimizar tu biotipo.`;
+      } else {
+        swapContainer.textContent =
+          "Completa tu analisis biomecanico para ver tu sustitucion recomendada del dia.";
+      }
+    </script>
+  </body>
+</html>

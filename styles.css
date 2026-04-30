@@ -41,3 +41,13 @@ body {
   padding: 4px 10px;
   font-weight: 600;
 }
+
+.swap-box {
+  margin-top: 14px;
+  border: 1px solid #334155;
+  background: #0b1220;
+  border-radius: 10px;
+  padding: 12px;
+  font-weight: 600;
+  color: #d1fae5;
+}
