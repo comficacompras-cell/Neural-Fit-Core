@@ -1,0 +1,35 @@
+// Este código fuerza la activación del sonido al tocar la pantalla
+let audioCtx = null;
+
+function initAudio() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+}
+
+function playBeep(frequency, duration) {
+    initAudio();
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    oscillator.type = 'square'; // Sonido tipo alerta de juego antiguo, imposible de ignorar
+    oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+    
+    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + duration);
+}
+
+// Vincula esto al icono de la corneta
+document.getElementById('sound-toggle').addEventListener('click', () => {
+    playBeep(880, 0.1); // Un pitido de prueba al tocar
+    console.log("Audio desbloqueado");
+});
