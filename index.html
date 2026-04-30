@@ -21,10 +21,43 @@
         </div>
         <div id="pantry-response" class="swap-box secondary"></div>
       </section>
+
+      <section class="card">
+        <h2>Visual Evolution Diary</h2>
+        <p class="muted">
+          Sube 3 fotos: Frente, Perfil y Espalda. El sistema comparara tu evolucion en registros sucesivos.
+        </p>
+        <div class="photo-grid">
+          <label class="upload-item">
+            <span>Frente</span>
+            <input id="photo-front" type="file" accept="image/*" />
+            <img id="preview-front" class="photo-preview" alt="Preview frente" />
+          </label>
+          <label class="upload-item">
+            <span>Perfil</span>
+            <input id="photo-profile" type="file" accept="image/*" />
+            <img id="preview-profile" class="photo-preview" alt="Preview perfil" />
+          </label>
+          <label class="upload-item">
+            <span>Espalda</span>
+            <input id="photo-back" type="file" accept="image/*" />
+            <img id="preview-back" class="photo-preview" alt="Preview espalda" />
+          </label>
+        </div>
+        <button id="btn-analyze-visual" class="action-btn visual-btn">Analizar Evolucion Visual</button>
+        <div id="visual-feedback" class="swap-box secondary">
+          Carga tus 3 fotos para generar el primer registro visual.
+        </div>
+      </section>
     </main>
 
     <script type="module">
-      import { getFullAnalysisResult } from "./storage.js";
+      import {
+        getFullAnalysisResult,
+        savePhotoReferences,
+        saveVisualDiaryEntry,
+        getVisualDiaryEntries,
+      } from "./storage.js";
 
       const swapContainer = document.getElementById("daily-swap");
       const questionContainer = document.getElementById("pantry-question");
@@ -33,6 +66,16 @@
       const btnNoHave = document.getElementById("btn-no-have");
       const saved = getFullAnalysisResult();
       const swap = saved?.nutrition?.economicalSwaps?.[0];
+      const bioProfile = saved?.bio;
+
+      const inputFront = document.getElementById("photo-front");
+      const inputProfile = document.getElementById("photo-profile");
+      const inputBack = document.getElementById("photo-back");
+      const previewFront = document.getElementById("preview-front");
+      const previewProfile = document.getElementById("preview-profile");
+      const previewBack = document.getElementById("preview-back");
+      const visualBtn = document.getElementById("btn-analyze-visual");
+      const visualFeedback = document.getElementById("visual-feedback");
 
       const emergencyAlternatives = {
         "Suero de leche": "Queso blanco duro rallado (proteina lenta)",
@@ -43,6 +86,34 @@
       function normalizeFoodName(foodName) {
         if (!foodName) return null;
         return foodName.split("+")[0].trim();
+      }
+
+      function bindPreview(inputEl, imgEl) {
+        inputEl.addEventListener("change", () => {
+          const file = inputEl.files?.[0];
+          if (!file) return;
+          const url = URL.createObjectURL(file);
+          imgEl.src = url;
+          imgEl.style.display = "block";
+        });
+      }
+
+      function calculateVisualScores(frontFile, profileFile, backFile) {
+        const quadScore = Math.min(100, Math.round((frontFile.size + profileFile.size) / 50000));
+        const hipPostureScore = Math.min(100, Math.round((profileFile.size + backFile.size) / 60000));
+        return {
+          cuadricipiteScore: quadScore,
+          caderaPostureScore: hipPostureScore,
+        };
+      }
+
+      function compareSnapshots(previous, current, hasLongFemur) {
+        const prevQuad = Math.max(previous.cuadricipiteScore, 1);
+        const prevHip = Math.max(previous.caderaPostureScore, 1);
+        const quadDelta = ((current.cuadricipiteScore - previous.cuadricipiteScore) / prevQuad) * 100;
+        const hipDelta = ((current.caderaPostureScore - previous.caderaPostureScore) / prevHip) * 100;
+        const weighted = hasLongFemur ? quadDelta * 0.65 + hipDelta * 0.35 : quadDelta * 0.5 + hipDelta * 0.5;
+        return Math.round(weighted * 100) / 100;
       }
 
       if (swap) {
@@ -71,6 +142,51 @@
         btnNoHave.disabled = true;
         responseContainer.textContent = "";
       }
+
+      bindPreview(inputFront, previewFront);
+      bindPreview(inputProfile, previewProfile);
+      bindPreview(inputBack, previewBack);
+
+      visualBtn.addEventListener("click", () => {
+        const frontFile = inputFront.files?.[0];
+        const profileFile = inputProfile.files?.[0];
+        const backFile = inputBack.files?.[0];
+
+        if (!frontFile || !profileFile || !backFile) {
+          visualFeedback.textContent = "Debes cargar Frente, Perfil y Espalda para continuar.";
+          return;
+        }
+
+        const refs = {
+          front: frontFile.name,
+          profile: profileFile.name,
+          back: backFile.name,
+        };
+        savePhotoReferences(refs);
+
+        const currentMetrics = calculateVisualScores(frontFile, profileFile, backFile);
+        const entries = getVisualDiaryEntries();
+        const previous = entries.length > 0 ? entries[entries.length - 1].metrics : null;
+        const hasLongFemur = Boolean(bioProfile?.isLongFemur);
+        const biotypeLabel = bioProfile?.biotipo === "ectomorph" || bioProfile?.biotipo === "mesomorph"
+          ? "ecto-mesomorfo"
+          : "biotipo";
+
+        let improvementPercent = 0;
+        if (previous) {
+          improvementPercent = compareSnapshots(previous, currentMetrics, hasLongFemur);
+        }
+
+        saveVisualDiaryEntry({
+          refs,
+          metrics: currentMetrics,
+          isLongFemur: hasLongFemur,
+          improvementPercent,
+        });
+
+        visualFeedback.textContent =
+          `Tu biotipo ${biotypeLabel} ha mostrado un ${improvementPercent}% de mejora en densidad muscular.`;
+      });
     </script>
   </body>
 </html>

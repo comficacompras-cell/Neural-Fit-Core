@@ -17,6 +17,18 @@ export interface BioAnalysisResult {
   notes: string[];
 }
 
+export interface VisualProportionSnapshot {
+  cuadricipiteScore: number;
+  caderaPostureScore: number;
+  timestamp?: string;
+}
+
+export interface VisualComparisonResult {
+  improvementPercent: number;
+  summary: string;
+  focusAreas: string[];
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
@@ -79,5 +91,43 @@ export function analyzeBiotype(input: BioInput): BioAnalysisResult {
     biotipo,
     confidence: round2(confidence),
     notes,
+  };
+}
+
+/**
+ * Phase 3 (Visual Evolution Diary):
+ * Compara snapshots visuales y, en usuarios con femur largo,
+ * enfatiza cambios de volumen de cuadriceps y postura de cadera.
+ */
+export function compareVisualProportions(
+  previous: VisualProportionSnapshot,
+  current: VisualProportionSnapshot,
+  bio: Pick<BioAnalysisResult, "isLongFemur" | "biotipo">
+): VisualComparisonResult {
+  const safePreviousQuad = Math.max(previous.cuadricipiteScore, 1);
+  const safePreviousHip = Math.max(previous.caderaPostureScore, 1);
+
+  const quadDelta = ((current.cuadricipiteScore - previous.cuadricipiteScore) / safePreviousQuad) * 100;
+  const hipDelta = ((current.caderaPostureScore - previous.caderaPostureScore) / safePreviousHip) * 100;
+
+  const weightedImprovement = bio.isLongFemur ? quadDelta * 0.65 + hipDelta * 0.35 : quadDelta * 0.5 + hipDelta * 0.5;
+  const improvementPercent = round2(Math.max(weightedImprovement, -100));
+
+  const focusAreas = bio.isLongFemur
+    ? [
+        `Cambio de cuadriceps: ${round2(quadDelta)}%`,
+        `Cambio de postura de cadera: ${round2(hipDelta)}%`,
+      ]
+    : [`Cambio muscular global: ${round2(quadDelta)}%`, `Cambio postural global: ${round2(hipDelta)}%`];
+
+  const summary =
+    bio.isLongFemur
+      ? `Perfil con femur largo: la comparacion prioriza cuadriceps y control de cadera (${improvementPercent}%).`
+      : `Comparacion visual general completada (${improvementPercent}%).`;
+
+  return {
+    improvementPercent,
+    summary,
+    focusAreas,
   };
 }
